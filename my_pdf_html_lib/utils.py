@@ -109,14 +109,30 @@ def convert_lists_to_html(text_with_styles):
 
     html_content += "</body></html>"
     return html_content
+
+
 def convert_tables_to_html(text_with_styles):
-    # Implement logic to detect and convert tables
-    pass
+    html_content = "<html><body>"
+    
+    # Your logic to convert tables
+    
+    html_content += "</body></html>"
+    return html_content
+
 
 def convert_pdf_to_html(pdf_path, output_path):
     text_with_styles = extract_text_with_styles(pdf_path)
+    
+    # Convert text with styles to HTML
     html_content = convert_text_with_styles_to_html(text_with_styles)
-    html_content = convert_lists_to_html(text_with_styles)  # Ensure list conversion is applied
-    html_content = convert_tables_to_html(text_with_styles)  # Add table conversion if needed
-
-    save_html(html_content, output_path)
+    
+    # Convert lists to HTML
+    html_content = convert_lists_to_html(text_with_styles)  # Append or modify content as needed
+    
+    # Convert tables to HTML
+    html_content += convert_tables_to_html(text_with_styles)  # Append or modify content as needed
+    
+    if html_content:
+        save_html(html_content, output_path)
+    else:
+         print("Error: HTML content is None")
