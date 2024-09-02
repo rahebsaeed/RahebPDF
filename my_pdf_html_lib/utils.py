@@ -77,10 +77,24 @@ def convert_text_with_styles_to_html(text_with_styles):
     css = generate_css(text_with_styles)
     html_content += css + "</head><body>"
 
-    # Apply the CSS classes to the corresponding text spans
+    # Use a flag or logic to decide when to start a new paragraph
+    current_paragraph = []
+    
     for index, item in enumerate(text_with_styles):
         class_name = f"text-style-{index}"
-        html_content += f"<span class='{class_name}'>{item['text']}</span>"
+        span = f"<span class='{class_name}'>{item['text']}</span>"
+
+        # Detect the end of a line or a block to decide when to wrap in a <p>
+        if item['text'].endswith('\n') or item['text'].strip() == '':
+            if current_paragraph:  # If there's content collected, wrap it in a paragraph
+                html_content += f"<p>{''.join(current_paragraph)}</p>"
+                current_paragraph = []  # Reset for the next paragraph
+        else:
+            current_paragraph.append(span)
+    
+    # Add the last paragraph if it exists
+    if current_paragraph:
+        html_content += f"<p>{''.join(current_paragraph)}</p>"
 
     html_content += "</body></html>"
     return html_content
