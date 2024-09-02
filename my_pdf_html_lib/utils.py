@@ -56,27 +56,31 @@ def extract_text_with_styles(pdf_path):
             if block['type'] == 0:  # Text block
                 for line in block['lines']:
                     for span in line['spans']:
+                        # Detect bold and italic styles based on font information
+                        is_bold = 'bold' in span['font'].lower()
+                        is_italic = 'italic' in span['font'].lower()
                         text_with_styles.append({
                             "text": span['text'],
                             "font": span['font'],
                             "size": span['size'],
-                            "color": span['color']
+                            "color": span['color'],
+                            "bold": is_bold,
+                            "italic": is_italic
                         })
     doc.close()
     return text_with_styles
 
 def convert_text_with_styles_to_html(text_with_styles):
-    html_content = "<html><body>"
+    html_content = "<html><head>"
 
-    for item in text_with_styles:
-        style = f"font-family: {item['font']}; font-size: {item['size']}px; color: #{item['color']:06x};"
-        # Check for bold or italic text
-        if 'bold' in item['font'].lower():
-            html_content += f"<b><span style='{style}'>{item['text']}</span></b>"
-        elif 'italic' in item['font'].lower():
-            html_content += f"<i><span style='{style}'>{item['text']}</span></i>"
-        else:
-            html_content += f"<span style='{style}'>{item['text']}</span>"
+    # Generate CSS for extracted styles
+    css = generate_css(text_with_styles)
+    html_content += css + "</head><body>"
+
+    # Apply the CSS classes to the corresponding text spans
+    for index, item in enumerate(text_with_styles):
+        class_name = f"text-style-{index}"
+        html_content += f"<span class='{class_name}'>{item['text']}</span>"
 
     html_content += "</body></html>"
     return html_content
@@ -122,17 +126,30 @@ def convert_tables_to_html(text_with_styles):
 
 def convert_pdf_to_html(pdf_path, output_path):
     text_with_styles = extract_text_with_styles(pdf_path)
-    
-    # Convert text with styles to HTML
+
+    # Convert text with styles to HTML with CSS
     html_content = convert_text_with_styles_to_html(text_with_styles)
-    
-    # Convert lists to HTML
-    html_content = convert_lists_to_html(text_with_styles)  # Append or modify content as needed
-    
-    # Convert tables to HTML
-    html_content += convert_tables_to_html(text_with_styles)  # Append or modify content as needed
-    
-    if html_content:
-        save_html(html_content, output_path)
-    else:
-         print("Error: HTML content is None")
+
+    # Convert lists and tables if needed
+    # For lists:
+    # html_content = convert_lists_to_html(text_with_styles)
+    # For tables:
+    # html_content += convert_tables_to_html(text_with_styles)
+
+    # Save the HTML output
+    save_html(html_content, output_path)
+
+def generate_css(styles):
+    css = "<style>\n"
+    for index, style in enumerate(styles):
+        # Create unique class names for each style
+        class_name = f"text-style-{index}"
+        color = f"#{style['color']:06x}"
+        font_size = f"{style['size']}px"
+        font_family = style['font']
+        font_weight = 'bold' if style['bold'] else 'normal'
+        font_style = 'italic' if style['italic'] else 'normal'
+
+        css += f".{class_name} {{ font-family: {font_family}; font-size: {font_size}; color: {color}; font-weight: {font_weight}; font-style: {font_style}; }}\n"
+    css += "</style>\n"
+    return css
