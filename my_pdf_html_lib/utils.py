@@ -31,3 +31,17 @@ def extract_images_from_pdf(pdf_path):
     
     doc.close()
     return images
+def convert_text_to_html(text):
+    """
+    Convert extracted text to a basic HTML format.
+    """
+    html_content = f"<html><body><pre>{text}</pre></body></html>"
+    return html_content
+
+
+def save_html(html_content, output_path):
+    """
+    Save HTML content to a file.
+    """
+    with open(output_path, "w", encoding="utf-8") as html_file:
+        html_file.write(html_content)
