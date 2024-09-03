@@ -9,7 +9,3 @@ python setup.py sdist bdist_wheel
 ##Use twine to upload your package to PyPI:
 
 twine upload dist/*
-
-//token
-
-pypi-AgEIcHlwaS5vcmcCJDNlZTNiYjExLWFjMjAtNGJhYS1hOTUxLWMyYWYyYWFlNDA3NgACKlszLCIwOTEyMWE2OC1jOWJiLTRiNjUtYTY5ZS05ZDRmMDY2ZGE0YTQiXQAABiBJSW1uXZUv6JGbbyAEyVU1IAQC7QyyRwdwaCkSmbLuAA
