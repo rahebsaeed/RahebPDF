@@ -1,0 +1,4 @@
+PyMuPDF
+Pillow
+fitz
+python-dotenv
