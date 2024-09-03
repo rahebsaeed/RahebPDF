@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: RahebPDF
+Version: 0.1
+Summary: A library for converting PDF to HTML and vice versa
+Home-page: https://github.com/rahebsaeed/RahebPDF
+Author: Raheb Saeed
+Author-email: raheebareef@gmail.com
+Requires-Dist: PyMuPDF
+Requires-Dist: Pillow
+Requires-Dist: fitz
+Requires-Dist: python-dotenv

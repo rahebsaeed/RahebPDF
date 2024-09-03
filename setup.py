@@ -5,8 +5,11 @@ setup(
     version='0.1',
     packages=find_packages(),
     install_requires=[
-        'PyMuPDF',  # This installs the fitz module
-        'Pillow',   # This installs the PIL module
+        'PyMuPDF', 
+        'Pillow',   
+        'fitz',
+        'python-dotenv',
+
     ],
     url='https://github.com/rahebsaeed/RahebPDF',
     author='Raheb Saeed',

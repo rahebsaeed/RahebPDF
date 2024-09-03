@@ -1,4 +1,11 @@
 import fitz  # PyMuPDF for PDF handling
+from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+
 
 def extract_text_with_styles(pdf_path):
     text_with_styles = []
@@ -67,8 +74,58 @@ def generate_css(text_with_styles):
     css += "</style>"
     return css, classes
 
+def calculate_statistics(text_with_styles):
+    text_content = ''.join(item['text'] for item in text_with_styles)
+    words = text_content.split()
+    
+    # Calculate statistics
+    stats = {
+        'created': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'last_saved': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'pages': 1,  # Simple assumption; adjust as needed
+        'words': len(words),
+        'characters': len(text_content),
+        'lines': text_content.count('\n') + 1,
+        'paragraphs': text_content.count('\n\n') + 1,
+        'characters_with_spaces': len(text_content.replace('\n', ' ')),  # Including spaces
+        'version': '16.00'
+    }
+    return stats
+
 def convert_text_with_styles_to_html(text_with_styles):
-    html_content = "<html><head>"
+    # Calculate statistics
+    stats = calculate_statistics(text_with_styles)
+
+    # HTML header with dynamic metadata
+    html_content = f"""<!DOCTYPE html>
+    <html xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office'
+          xmlns:w='urn:schemas-microsoft-com:office:word' xmlns:m='http://schemas.microsoft.com/office/2004/12/omml'
+          xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+        <meta charset='UTF-8'>
+        <meta http-equiv='Content-Type' content='text/html; charset=unicode'>
+        <meta name='ProgId' content='{os.getenv('Name__')}'>
+        <meta name='Generator' content='{os.getenv('Name__')} {os.getenv('version')}'>
+        <meta name='Originator' content={os.getenv('Name__')} {os.getenv('version')}'>
+        <meta name="author" content="">
+
+        <!--[if gte mso 9]><xml>
+        <o:DocumentProperties>
+            <o:LastAuthor>{os.getenv('Name__')}</o:LastAuthor>
+            <o:Revision>3</o:Revision>
+            <o:TotalTime>4</o:TotalTime>
+            <o:Created>{stats['created']}</o:Created>
+            <o:LastSaved>{stats['last_saved']}</o:LastSaved>
+            <o:Pages>{stats['pages']}</o:Pages>
+            <o:Words>{stats['words']}</o:Words>
+            <o:Characters>{stats['characters']}</o:Characters>
+            <o:Lines>{stats['lines']}</o:Lines>
+            <o:Paragraphs>{stats['paragraphs']}</o:Paragraphs>
+            <o:CharactersWithSpaces>{stats['characters_with_spaces']}</o:CharactersWithSpaces>
+            <o:Version>{stats['version']}</o:Version>
+        </o:DocumentProperties>
+        </xml><![endif]-->
+    """
 
     # Generate CSS and get class mapping
     css, classes = generate_css(text_with_styles)
@@ -81,8 +138,7 @@ def convert_text_with_styles_to_html(text_with_styles):
 
     for index, item in enumerate(text_with_styles):
         class_name = classes[(item['font'], item['size'], item['color'], item['flags'], item['alignment'])]
-        
-        # Determine if the text is a header based on size or font weight (heuristic)
+
         if item['size'] > 14 and item['flags'] & 2:  # Example heuristic: large and bold
             if current_paragraph:
                 html_content += f"<p>{''.join(current_paragraph)}</p>"
@@ -102,7 +158,7 @@ def convert_text_with_styles_to_html(text_with_styles):
                 html_content += f"<p>{''.join(current_paragraph)}</p>"
                 current_paragraph = []
 
-    # Add the last paragraph if it exists
+    # Add the last paragraph or header if they exist
     if current_paragraph:
         html_content += f"<p>{''.join(current_paragraph)}</p>"
     if current_header:
@@ -110,6 +166,8 @@ def convert_text_with_styles_to_html(text_with_styles):
 
     html_content += "</body></html>"
     return html_content
+
+
 
 def save_html(html_content, output_path):
     """
@@ -122,4 +180,3 @@ def convert_pdf_to_html(pdf_path, output_path):
     text_with_styles = extract_text_with_styles(pdf_path)
     html_content = convert_text_with_styles_to_html(text_with_styles)
     save_html(html_content, output_path)
-
