@@ -1,4 +1,4 @@
-import fitz  # PyMuPDF for PDF handling
+import fitz 
 from datetime import datetime
 from dotenv import load_dotenv
 import os

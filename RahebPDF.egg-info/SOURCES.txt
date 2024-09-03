@@ -1,4 +1,5 @@
 README.md
+license.md
 setup.py
 RahebPDF.egg-info/PKG-INFO
 RahebPDF.egg-info/SOURCES.txt
