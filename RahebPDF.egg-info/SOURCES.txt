@@ -6,5 +6,3 @@ RahebPDF.egg-info/SOURCES.txt
 RahebPDF.egg-info/dependency_links.txt
 RahebPDF.egg-info/requires.txt
 RahebPDF.egg-info/top_level.txt
-pdf_to_html/__init__.py
-pdf_to_html/utils.py

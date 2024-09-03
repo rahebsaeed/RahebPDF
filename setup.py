@@ -2,14 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='RahebPDF',
-    version='0.1',
+    version='0.1', 
     packages=find_packages(),
     install_requires=[
         'PyMuPDF', 
         'Pillow',   
         'fitz',
         'python-dotenv',
-
     ],
     url='https://github.com/rahebsaeed/RahebPDF',
     author='Raheb Saeed',
