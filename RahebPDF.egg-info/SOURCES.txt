@@ -1,8 +1,0 @@
-README.md
-license.md
-setup.py
-RahebPDF.egg-info/PKG-INFO
-RahebPDF.egg-info/SOURCES.txt
-RahebPDF.egg-info/dependency_links.txt
-RahebPDF.egg-info/requires.txt
-RahebPDF.egg-info/top_level.txt
