@@ -2,14 +2,20 @@ from setuptools import setup, find_packages
 
 setup(
     name='RahebPDF',
-    version='0.3',  
-    packages=find_packages(),
+    version='0.1',
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     install_requires=[
         'PyMuPDF',
         'Pillow',
         'fitz',
         'python-dotenv',
     ],
+    entry_points={
+        'console_scripts': [
+            'convert-pdf-to-html=pdf_to_html.utils:convert_pdf_to_html',
+        ],
+    },
     url='https://github.com/rahebsaeed/RahebPDF',
     author='Raheb Saeed',
     author_email='raheebareef@gmail.com',
