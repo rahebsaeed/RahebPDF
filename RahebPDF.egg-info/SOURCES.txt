@@ -1,6 +1,5 @@
 README.md
 setup.py
-RahebPDF/__init__.py
 RahebPDF.egg-info/PKG-INFO
 RahebPDF.egg-info/SOURCES.txt
 RahebPDF.egg-info/dependency_links.txt
