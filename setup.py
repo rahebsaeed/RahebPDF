@@ -8,8 +8,8 @@ setup(
     install_requires=[
         'PyMuPDF',
         'Pillow',
-        'fitz',
         'python-dotenv',
+        'langdetect',
     ],
     entry_points={
         'console_scripts': [
