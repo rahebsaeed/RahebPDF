@@ -1,8 +1,8 @@
-from datetime import datetime
 from dotenv import load_dotenv
 import os
 import fitz 
 from langdetect import detect, DetectorFactory
+import json
 
 # Ensure consistent results
 DetectorFactory.seed = 0
@@ -35,33 +35,118 @@ def get_language_code(pdf_path):
     # Return the detected language code directly
     return lang_code
 
+#save as files HTML
+def save_html(html_content, output_path):
+    with open(output_path, "w", encoding="utf-8") as html_file:
+        html_file.write(html_content)
+
+
+
+
 def extract_text_with_styles(pdf_path):
     text_with_styles = []
     doc = fitz.open(pdf_path)
-
+    blocks = []
     for page in doc:
-        blocks = page.get_text("dict")["blocks"]
+        blocks = page.get_text("dict")
         for block in blocks:
             if block['type'] == 0:  # Text block
                 for line in block['lines']:
+                    line_text = ""
                     for span in line['spans']:
-                        # Print span to check if background is present
-                        #print(span)
-                        background_color = span.get('background', None)  # Try getting background color
-                        if background_color is None:  # Fallback to transparent if not present
-                            background_color = 'transparent'
-                        
+                        # Extract background color; default to transparent if not present
+                        background_color = span.get('background', 'transparent')
+                        bbox = span.get('bbox', (0, 0, 0, 0))
+
+                        # Detect bold and italic
+                        bold = (span['flags'] & 2) != 0
+                        italic = (span['flags'] & 1) != 0
+
+                        # Convert integer color to hex format
+                        color = f"#{span['color']:06x}"
+
+                        # Append styled text to line_text
+                        styled_text = span['text']
+                        if bold:
+                            styled_text = f"<b>{styled_text}</b>"
+                        if italic:
+                            styled_text = f"<i>{styled_text}</i>"
+
+                        line_text += f"<span style='font-family: {span['font']}; font-size: {span['size']}px; color: {color}; background-color: {background_color};'>{styled_text}</span>"
+
+                        size = span.get('size', 12)  # Default size if not provided
                         text_with_styles.append({
-                            "text": span['text'],
+                            "text": line_text,
                             "font": span['font'],
-                            "size": span['size'],
+                            "size": size + 2,  # Increment font size by 2
                             "color": span['color'],
                             "background": background_color,
-                            "flags": span['flags'],  # To detect bold, italic
-                            "alignment": block.get('alignment', 0)  # Alignment info
+                            "flags": span['flags'],
+                            "alignment": block.get('alignment', 0),
+                            "bbox": bbox
                         })
     doc.close()
-    return text_with_styles
+    json_str = json.dumps(blocks)
+    json_str2 = json.dumps(text_with_styles)
+
+    with open("blocks.json", "w") as f:
+        f.write(json_str)
+    with open("text_with_styles.json", "w") as f:
+        f.write(json_str2)
+    return text_with_styles, blocks
+
+def detect_list_type(line_text):
+    # Detects if a line starts with list markers (e.g., bullets, numbers)
+    list_markers = {
+        'circle': ('●', '○', '◯', '⦿', '◉', '⦾', '◦', '◘'),
+        'disc': ('•', '‣', '⁃', '∙', '⁍', '⁌'),
+        'square': ('■', '□', '▪', '▫'),
+        'number': [str(i) + '.' for i in range(1, 10)],
+        'letter': [chr(i) + '.' for i in range(65, 91)],  # A. to Z.
+        'latin': [chr(i) + '.' for i in range(97, 123)]  # a. to z.
+    }
+
+    for list_type, markers in list_markers.items():
+        if any(line_text.strip().startswith(marker) for marker in markers):
+            return list_type
+
+    return None
+
+
+def detect_body_styles(blocks):
+    # Initialize margins to a high value to find the minimum margin on the page
+    left_margin = float('inf')
+    right_margin = float('inf')
+    top_margin = float('inf')
+    bottom_margin = float('inf')
+
+    # Detect margins based on block positions and page size (assumed A4 for this example)
+    for block in blocks:
+        if 'bbox' in block:
+            bbox = block['bbox']
+            left_margin = min(left_margin, bbox[0])
+            right_margin = min(right_margin, 595.3 - bbox[2])  # A4 width in points
+            top_margin = min(top_margin, bbox[1])
+            bottom_margin = min(bottom_margin, 841.9 - bbox[3])  # A4 height in points
+
+    # Convert margins from points to CSS-friendly format (pt)
+    margin_left = f"{left_margin * 0.3528}pt"
+    margin_right = f"{right_margin * 0.3528}pt"
+    margin_top = f"{top_margin * 0.3528}pt"
+    margin_bottom = f"{bottom_margin * 0.3528}pt"
+
+    # Set default values for tab interval and word wrap
+    tab_interval = '0.5in'
+    word_wrap = 'break-word'
+
+    return {
+        'margin-left': margin_left,
+        'margin-right': margin_right,
+        'margin-top': margin_top,
+        'margin-bottom': margin_bottom,
+        'tab-interval': tab_interval,
+        'word-wrap': word_wrap
+    }
 
 def generate_css(text_with_styles):
     css = "<style>"
@@ -75,10 +160,10 @@ def generate_css(text_with_styles):
             classes[style_key] = class_name
             class_counter += 1
 
+            color = f"#{item['color']:06x}"
             font_weight = "bold" if item['flags'] & 2 else "normal"
             font_style = "italic" if item['flags'] & 1 else "normal"
-            color = f"#{item['color']:06x}"
-            background_color = f"#{item['background']:06x}" if item['background'] != 'transparent' else 'transparent'
+
             align_map = {0: 'left', 1: 'center', 2: 'right', 3: 'justify'}
             text_align = align_map.get(item['alignment'], 'left')
 
@@ -87,7 +172,7 @@ def generate_css(text_with_styles):
                 font-family: '{item['font']}';
                 font-size: {item['size']}px;
                 color: {color};
-                background-color: {background_color};
+                background-color: {item['background']};
                 font-weight: {font_weight};
                 font-style: {font_style};
                 text-align: {text_align};
@@ -97,71 +182,71 @@ def generate_css(text_with_styles):
     css += "</style>"
     return css, classes
 
-def convert_text_with_styles_to_html(text_with_styles, pdf_path):
-    # HTML header with dynamic metadata    
+def generate_body_css(styles):
+    # Generate CSS for the body based on detected styles
+    body_css = f"""
+    <style>
+    body {{
+        tab-interval: {styles['tab-interval']};
+        word-wrap: {styles['word-wrap']};
+        margin-left: {styles['margin-left']};
+        margin-top: {styles['margin-top']};
+        margin-right: {styles['margin-right']};
+        margin-bottom: {styles['margin-bottom']};
+    }}
+    </style>
+    """
+    return body_css
+
+
+def convert_text_with_styles_to_html(text_with_styles, blocks, pdf_path):
+    # Extract detected body styles
+    body_styles = detect_body_styles(blocks)
+    body_css = generate_body_css(body_styles)
     lang_code = get_language_code(pdf_path)
+    
 
     html_content = f"""<!DOCTYPE html>
-    <html xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office'
-          xmlns:w='urn:schemas-microsoft-com:office:word' xmlns:m='http://schemas.microsoft.com/office/2004/12/omml'
-          xmlns='http://www.w3.org/TR/REC-html40' lang="{lang_code}">
+    <html lang="{lang_code}">
     <head>
+        <meta http-equiv=Content-Type content="text/html; charset=unicode">
         <meta charset='UTF-8'>
         <meta http-equiv='Content-Type' content='text/html; charset=unicode'>
-        <meta name='ProgId' content='{os.getenv('Name__')}'>
         <meta name='Generator' content='{os.getenv('Name__')} {os.getenv('version')}'>
         <meta name='Originator' content='{os.getenv('Name__')} {os.getenv('version')}'>
         <meta name="author" content="{os.getenv('Name__')}">
         <meta name="keywords" content="">
         <meta name="description" content="">
         <title></title>
-        <link rel=themeData href="index11_files/themedata.thmx">
-        <link rel=colorSchemeMapping href="index11_files/colorschememapping.xml">
-        <meta charset=UTF-8>
         <meta name=viewport content="width=device-width, initial-scale=1.0">
-
     """
     css, classes = generate_css(text_with_styles)
-    html_content += css + f"</head><body lang={lang_code} style='tab-interval:.5in;word-wrap:break-word;margin-left: 15.0pt;margin-top:15.0pt;margin-right:15.0pt;margin-bottom:15.0pt'>"
+    html_content += css + body_css + "</head><body>"
 
-    current_paragraph = []
-    current_header = []
-    is_header = False
+    current_list_type = None
+    for item in text_with_styles:
+        list_type = detect_list_type(item['text'])
+        if list_type:
+            if current_list_type != list_type:
+                if current_list_type:
+                    html_content += f"</ul>"  # Close previous list if any
+                current_list_type = list_type
+                html_content += f"<ul type={current_list_type} >"
 
-    for index, item in enumerate(text_with_styles):
-        class_name = classes[(item['font'], item['size'], item['color'], item['background'], item['flags'], item['alignment'])]
-
-        if item['size'] > 14 and item['flags'] & 2:  # Example heuristic: large and bold
-            if current_paragraph:
-                html_content += f"<p>{''.join(current_paragraph)}</p>"
-                current_paragraph = []
-            is_header = True
-            current_header.append(f"<span class='{class_name}'>{item['text']}</span>")
+            html_content += f"<li>{item['text']}</li>"
         else:
-            if is_header:
-                html_content += f"<h1>{''.join(current_header)}</h1>"
-                current_header = []
-                is_header = False
-            current_paragraph.append(f"<span class='{class_name}'>{item['text']}</span>")
+            if current_list_type:
+                html_content += f"</ul>"  # Close the list
+                current_list_type = None
+            html_content += f"<span>{item['text']}</span>"
 
-        if item['text'].endswith('\n') or item['text'].strip() == '':
-            if current_paragraph:
-                html_content += f"<p>{''.join(current_paragraph)}</p>"
-                current_paragraph = []
-
-    if current_paragraph:
-        html_content += f"<p>{''.join(current_paragraph)}</p>"
-    if current_header:
-        html_content += f"<h1>{''.join(current_header)}</h1>"
+    if current_list_type:
+        html_content += f"</ul>"  # Close the list if still open
 
     html_content += "</body></html>"
     return html_content
 
-def save_html(html_content, output_path):
-    with open(output_path, "w", encoding="utf-8") as html_file:
-        html_file.write(html_content)
-
 def convert_pdf_to_html(pdf_path, output_path):
-    text_with_styles = extract_text_with_styles(pdf_path)
-    html_content = convert_text_with_styles_to_html(text_with_styles, pdf_path)
+    text_with_styles, blocks = extract_text_with_styles(pdf_path)
+    html_content = convert_text_with_styles_to_html(text_with_styles, blocks, pdf_path)
     save_html(html_content, output_path)
