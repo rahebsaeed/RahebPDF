@@ -48,7 +48,7 @@ def extract_text_with_styles(pdf_path):
     doc = fitz.open(pdf_path)
     blocks = []
     for page in doc:
-        blocks = page.get_text("dict")
+        blocks = page.get_text("dict")["blocks"]
         for block in blocks:
             if block['type'] == 0:  # Text block
                 for line in block['lines']:
