@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import fitz 
 from langdetect import detect, DetectorFactory
+from pdf2docx import Converter
 import json
 
 # Ensure consistent results
@@ -47,8 +48,12 @@ def extract_text_with_styles(pdf_path):
     text_with_styles = []
     doc = fitz.open(pdf_path)
     blocks = []
+    tables = []
     for page in doc:
         blocks = page.get_text("dict")["blocks"]
+        tables = page.find_tables()
+        if tables.tables:
+                print(tables[0].extract())
         for block in blocks:
             if block['type'] == 0:  # Text block
                 for line in block['lines']:
@@ -74,11 +79,11 @@ def extract_text_with_styles(pdf_path):
 
                         line_text += f"<span style='font-family: {span['font']}; font-size: {span['size']}px; color: {color}; background-color: {background_color};'>{styled_text}</span>"
 
-                        size = span.get('size', 12)  # Default size if not provided
+                        size = int(span.get('size', 12))  # Default size if not provided
                         text_with_styles.append({
                             "text": line_text,
                             "font": span['font'],
-                            "size": size + 2,  # Increment font size by 2
+                            "size": size,  
                             "color": span['color'],
                             "background": background_color,
                             "flags": span['flags'],
@@ -86,14 +91,26 @@ def extract_text_with_styles(pdf_path):
                             "bbox": bbox
                         })
     doc.close()
-    json_str = json.dumps(blocks)
-    json_str2 = json.dumps(text_with_styles)
 
+    # Convert data to JSON and save to files
     with open("blocks.json", "w") as f:
-        f.write(json_str)
+        json.dump(blocks, f)
     with open("text_with_styles.json", "w") as f:
-        f.write(json_str2)
+        json.dump(text_with_styles, f)
+
+
+    # Save table data as plain text
+    with open("tables.txt", "w") as f:
+        for table in tables:
+            if isinstance(table, list):
+                for row in table:
+                    row_str = "\t".join(str(cell) if cell is not None else "" for cell in row)
+                    f.write(row_str + "\n")
+            f.write("\n")
+            
+    
     return text_with_styles, blocks
+
 
 def detect_list_type(line_text):
     # Detects if a line starts with list markers (e.g., bullets, numbers)

@@ -2,3 +2,5 @@ PyMuPDF
 Pillow
 python-dotenv
 langdetect
+pdf2docx
+python-docx

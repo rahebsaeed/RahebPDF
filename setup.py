@@ -10,6 +10,8 @@ setup(
         'Pillow',
         'python-dotenv',
         'langdetect',
+        'pdf2docx',
+        'python-docx',
     ],
     entry_points={
         'console_scripts': [
