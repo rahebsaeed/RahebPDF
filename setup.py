@@ -12,6 +12,7 @@ setup(
         'langdetect',
         'pdf2docx',
         'python-docx',
+        'multipledispatch',
     ],
     entry_points={
         'console_scripts': [
@@ -22,4 +23,5 @@ setup(
     author='Raheb Saeed',
     author_email='raheebareef@gmail.com',
     description='A library for converting PDF to HTML and vice versa',
+    packages=find_packages(),
 )
