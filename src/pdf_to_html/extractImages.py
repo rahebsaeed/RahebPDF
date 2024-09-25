@@ -24,8 +24,8 @@ class ExtractImages:
 
     def extract_text_with_styles_and_images(self):
         """Extract styled text and images from the PDF."""
-        self.text_with_styles = []
-        image_number = 0
+        self.text_with_styles = []  # Clear previous data
+        image_number = 0  # Initialize image counter
 
         try:
             doc = fitz.open(self.pdf_path)
@@ -35,39 +35,36 @@ class ExtractImages:
                 for block in blocks:
                     if block['type'] == 0:  # Text block
                         for line in block['lines']:
-                            line_text = ""
                             for span in line['spans']:
+                                # Prepare properties for HTML representation
                                 bold = (span['flags'] & 2) != 0
                                 italic = (span['flags'] & 1) != 0
                                 color = f"#{span['color']:06x}"
                                 background_color = span.get('background', 'transparent')
                                 styled_text = span['text']
+                                
+                                # Apply bold and italic formatting
                                 if bold:
                                     styled_text = f"<b>{styled_text}</b>"
                                 if italic:
                                     styled_text = f"<i>{styled_text}</i>"
 
-                                # Append span with inline styles
+                                # Create span HTML
                                 span_html = (
                                     f"<span style='font-family: {span['font']}; font-size: {span['size']}px; "
-                                    f"color: {color}; background-color: {background_color};'>{styled_text}</span>"
+                                    f"color: {color}; background-color: {background_color}; "
+                                    f"position: absolute; left: {span['origin'][0]}px; top: {span['origin'][1]}px;'>"
+                                    f"{styled_text}</span>"
                                 )
-                                line_text += span_html
-
-                            # Store structured data for the entire line
-                            self.text_with_styles.append({
-                                "type": "text",
-                                "text": line_text,
-                                "font": line['spans'][0]['font'] if line['spans'] else '',
-                                "size": line['spans'][0]['size'] if line['spans'] else '',
-                                "color": line['spans'][0]['color'] if line['spans'] else '',
-                                "background": line['spans'][0].get('background', 'transparent') if line['spans'] else 'transparent',
-                                "flags": line['spans'][0]['flags'] if line['spans'] else 0
-                            })
+                                
+                                # Append the span HTML to the list
+                                self.text_with_styles.append({
+                                    "type": "text",
+                                    "text": span_html
+                                })
 
                 # Extract images
-                images = page.get_images(full=True)
-                
+                images = page.get_images(page_number, full=True)
                 for img in images:
                     xref = img[0]  # XREF of the image
                     base_image = doc.extract_image(xref)
@@ -75,21 +72,28 @@ class ExtractImages:
                     image_path = self.save_image(image_bytes, image_number)
                     image_number += 1
                     
+                    # Create image HTML
+                    image_html = (
+                        f"<img src='{image_path}' alt='Image {image_number}' "
+                        f"style='position: absolute; left: {img[1]}px; top: {img[2]}px; width: {img[3]}px; height: {img[4]}px;' />"
+                    )
+                    
                     # Append image tag to HTML
                     self.text_with_styles.append({
                         "type": "image",
-                        "text": f"<img src='{image_path}' alt='Image {image_number}' />"
+                        "text": image_html
                     })
 
             doc.close()
 
+            # Check if any content was extracted
+            if not self.text_with_styles:
+                print("No content extracted from PDF!")
             # Save extracted data to a JSON file for verification
             with open(os.path.join(os.path.dirname(self.output_path), "text_with_styles.json"), "w", encoding="utf-8") as f:
                 json.dump(self.text_with_styles, f, indent=4)
             print("Text with styles and images saved to text_with_styles.json")
-
-            # Debug: Print extracted data
-
+            return self.text_with_styles
 
         except Exception as e:
             print(f"Error extracting styled text and images: {e}")

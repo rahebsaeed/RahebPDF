@@ -11,7 +11,7 @@ class PDFConverter:
         self.text_with_styles = []
         self.language_detector = DetectLanguage()
         self.ExtractImages = ExtractImages(pdf_path, output_path)
-        self.ExtractTextPDFtoHTML = ExtractTextPDFtoHTML(self._pdf_path, self.text_with_styles, self.language_detector)
+        self.ExtractTextPDFtoHTML = ExtractTextPDFtoHTML(self._pdf_path, self.text_with_styles, self.language_detector, self.output_path)
 
 
     def save_html(self, html_content: str):

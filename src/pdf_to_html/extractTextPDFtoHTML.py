@@ -1,17 +1,20 @@
 import fitz  # PyMuPDF
 import os
 from dotenv import load_dotenv
+from .extractImages import ExtractImages
 
 load_dotenv()
 
 class ExtractTextPDFtoHTML:
-    def __init__(self, pdf_path: str, text_with_styles: list, language_detector):
+    def __init__(self, pdf_path: str, text_with_styles: list, language_detector, output_path):
         """Initialize the ExtractTextPDFtoHTML with paths and styles."""
         self.pdf_path = pdf_path
-        self.text_with_styles = text_with_styles  # Store the extracted styles 
+        self.output_path = output_path
+        self.ExtractImages = ExtractImages(pdf_path, output_path)
+        self.ExtractImages.extract_text_with_styles_and_images()
+        self.text_with_styles = self.ExtractImages.text_with_styles
         self.language_detector = language_detector  # Store the language detector
- 
-        
+
     def extract_text_from_pdf(self) -> str:
         """Extract plain text from the PDF."""
         text = ""
@@ -74,13 +77,8 @@ class ExtractTextPDFtoHTML:
 
     def convert_text_with_styles_to_html(self) -> str:
         """Convert extracted text with styles to HTML."""
-        # No need to assign styles again, they are already passed in the constructor.
-        
-        # Detect the language
-        text = self.extract_text_from_pdf()
-        lang_code = self.language_detector.get_language_code(text)
+        lang_code = self.language_detector.get_language_code(" ".join([item['text'] for item in self.text_with_styles if item['type'] == 'text']))
 
-        # Start constructing the HTML content
         html_content = f"""<!DOCTYPE html>
     <html lang="{lang_code}">
     <head>
@@ -92,38 +90,21 @@ class ExtractTextPDFtoHTML:
         <meta name=viewport content="width=device-width, initial-scale=1.0">
     """
 
-        # Generate the CSS and add it to the HTML head
         css = self.generate_css()
         html_content += css + "</head><body>"
 
-        # Handle lists and regular content
         current_list_type = None
 
+        if not self.text_with_styles:
+            return html_content + "</body></html>"
+
         for item in self.text_with_styles:
-            # Detect if the current text is part of a list
-            list_type = self.detect_list_type(item['text'])
-            if list_type:
-                if current_list_type != list_type:
-                    if current_list_type:
-                        html_content += f"</ul>"  # Close the previous list if any
-                    current_list_type = list_type
-                    html_content += f"<ul type='{current_list_type}'>"
-
-                html_content += f"<li>{item['text']}</li>"
-            else:
-                if current_list_type:
-                    html_content += f"</ul>"  # Close the list
-                    current_list_type = None
-
-                # Check if the item contains an image tag and handle accordingly
-                if "img src" in item['text']:
-                    html_content += f"{item['text']}"
-                else:
-                    html_content += f"<p>{item['text']}</p>"
-
-        # Close any open list
-        if current_list_type:
-            html_content += f"</ul>"
+            if item["type"] == "text":
+                # Directly add text to HTML
+                html_content += item["text"]
+            elif item["type"] == "image":
+                # Directly add image HTML
+                html_content += item["text"]
 
         html_content += "</body></html>"
         return html_content
