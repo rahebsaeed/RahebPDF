@@ -80,7 +80,7 @@ class ExtractTextPDFtoHTML:
         lang_code = self.language_detector.get_language_code(" ".join([item['text'] for item in self.text_with_styles if item['type'] == 'text']))
 
         html_content = f"""<!DOCTYPE html>
-    <html lang="{lang_code}">
+    <html lang="{lang_code if lang_code else ''}">
     <head>
         <meta charset='UTF-8'>
         <meta name='Generator' content='{os.getenv('Name__')} {os.getenv('version')}'>
@@ -94,12 +94,12 @@ class ExtractTextPDFtoHTML:
         html_content += css + "</head><body>"
 
         current_list_type = None
-
+        
         if not self.text_with_styles:
             return html_content + "</body></html>"
 
         for item in self.text_with_styles:
-            if item["type"] == "text":
+            if item["type"] == "page":
                 # Directly add text to HTML
                 html_content += item["text"]
             elif item["type"] == "image":
