@@ -44,31 +44,50 @@ class ExtractImages:
                 blocks = page.get_text("dict")["blocks"]
                 for block in blocks:
                     if block['type'] == 0:  # Text block
-                        for line in block['lines']:
+                     line_html = f"<p class='paragraph' style='position: absolute;  left: {block['bbox'][0]}px; top: {block['bbox'][1]}px;''>"   
+                     for line in block['lines']:
+                            # Start a new paragraph for each line
+                            
                             for span in line['spans']:
                                 # Prepare properties for HTML representation
-                                bold = (span['flags'] & 2) != 0
-                                italic = (span['flags'] & 1) != 0
+                                bold = (span['flags'] & 2**4) != 0
+                                italic = (span['flags'] & 2**1) != 0
+                                monospaced = (span['flags'] & 2**3) != 0
+                                serifed = (span['flags'] & 2**2) != 0
+                                superscripted = (span['flags'] & 2**0) != 0
                                 color = f"#{span['color']:06x}"
                                 background_color = span.get('background', 'transparent')
                                 styled_text = span['text']
 
-                                # Apply bold and italic formatting
+                                # Build the style string
+                                style = f"font-size: {span['size']}px; color: {color}; background-color: {background_color}; "
                                 if bold:
                                     styled_text = f"<b>{styled_text}</b>"
                                 if italic:
                                     styled_text = f"<i>{styled_text}</i>"
+                                if monospaced:
+                                    style += "font-family: monospace; "
+                                elif serifed:
+                                    style += "font-family: serif; "
+                                else:
+                                    style += f"font-family: {span['font']};"
+                                if superscripted:
+                                    style += "vertical-align: super; font-size: smaller; "
 
-                                # Create span HTML with absolute positioning
+                                # Create span HTML
                                 span_html = (
-                                    f"<span style='font-family: {span['font']}; font-size: {span['size']}px; "
-                                    f"color: {color}; background-color: {background_color}; "
-                                    f"position: absolute; left: {span['origin'][0]}px; top: {span['origin'][1]}px;'>"
+                                    f"<span style='{style} position: relative; left: {span['origin'][0] - span['bbox'][0]}px; top: {span['origin'][1] - span['bbox'][1]}px; right: {span['bbox'][2] - line['bbox'][2]}px; bottom: {span['bbox'][3] - span['bbox'][3]}px;'>"
                                     f"{styled_text}</span>"
                                 )
 
-                                # Append the span HTML to the page HTML
-                                page_html += span_html
+                                # Append the span HTML to the line HTML
+                                line_html += span_html
+
+                            
+                            # Append the line HTML to the page HTML
+                            page_html += line_html
+                    # Close the paragraph tag
+                    line_html += "</p>"
 
                 # Extract images
                 images = page.get_images(full=True)
@@ -78,7 +97,6 @@ class ExtractImages:
                     image_info = page.get_image_info(hashes=False, xrefs=xref)
 
                     if base_image and image_info:  # Ensure the image was successfully extracted and image_info is available
-                        # Access the first dictionary in the image_info list
                         image_info_dict = image_info[0] if isinstance(image_info, list) else image_info
 
                         image_bytes = base_image["image"]
