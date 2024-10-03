@@ -1,6 +1,8 @@
 import fitz  # PyMuPDF
 import json
 import os
+import math
+
 
 class ExtractImages:
     def __init__(self, pdf_path: str, output_path: str):
@@ -30,7 +32,6 @@ class ExtractImages:
             doc = fitz.open(self.pdf_path)
             total_pages = doc.page_count
             print(f"Total pages in PDF: {total_pages}")
-
             for page_number, page in enumerate(doc):
                 print(f"Processing page {page_number + 1} of {total_pages}")
 
@@ -39,16 +40,35 @@ class ExtractImages:
                 page_html = (
                     f"<div style='position: relative; width: {page_width}px; height: {page_height}px; border: 1px solid black; margin-bottom: 20px;'>"
                 )
-
-                # Extract text
                 blocks = page.get_text("dict")["blocks"]
+                links =  page.get_links()
+                #print(blocks)
                 for block in blocks:
                     if block['type'] == 0:  # Text block
-                     line_html = f"<p class='paragraph' style='position: absolute;  left: {block['bbox'][0]}px; top: {block['bbox'][1]}px;''>"   
-                     for line in block['lines']:
-                            # Start a new paragraph for each line
-                            
+                        for line in block['lines']:
+                            # Get the bounding box for the text block
+                            block_left = block['bbox'][0]
+                            block_top = block['bbox'][1]
+
+                            # Start a new paragraph with absolute positioning based on block's bbox
+                            line_html = f"<p class='paragraph' style='position: absolute; left: {block_left}px; top: {block_top}px;'>"
+
                             for span in line['spans']:
+                                # Calculate relative positions for each span within the paragraph
+                                span_left = span['bbox'][0] - span['origin'][0] 
+                                span_top = span['origin'][1] - block_top      
+                                # Calculate rotation angle based on the 'dir' vector from the PDF
+                                dir_value = line['dir']
+                                cosine = dir_value[0]
+                                sine = -dir_value[1]
+
+                                # Compute rotation angle in degrees
+                                angle_in_radians = math.atan2(sine, cosine)
+                                angle_in_degrees = math.degrees(angle_in_radians)
+
+                                # Generate CSS for the rotation
+                                rotation_css = f"transform: rotate({angle_in_degrees}deg);"
+
                                 # Prepare properties for HTML representation
                                 bold = (span['flags'] & 2**4) != 0
                                 italic = (span['flags'] & 2**1) != 0
@@ -59,8 +79,8 @@ class ExtractImages:
                                 background_color = span.get('background', 'transparent')
                                 styled_text = span['text']
 
-                                # Build the style string
-                                style = f"font-size: {span['size']}px; color: {color}; background-color: {background_color}; "
+                                # Build the style string for the span
+                                style = f"font-size: {span['size']}px; color: {color}; background-color: {background_color}; position: relative; left: {span_left}px; top: {span_top}px; {rotation_css} "
                                 if bold:
                                     styled_text = f"<b>{styled_text}</b>"
                                 if italic:
@@ -74,20 +94,20 @@ class ExtractImages:
                                 if superscripted:
                                     style += "vertical-align: super; font-size: smaller; "
 
-                                # Create span HTML
-                                span_html = (
-                                    f"<span style='{style} position: relative; left: {span['origin'][0] - span['bbox'][0]}px; top: {span['origin'][1] - span['bbox'][1]}px; right: {span['bbox'][2] - line['bbox'][2]}px; bottom: {span['bbox'][3] - span['bbox'][3]}px;'>"
-                                    f"{styled_text}</span>"
-                                )
+                                # Create span HTML with relative positioning
+                                span_html = f"<span style='{style}'>{styled_text}</span>"
 
                                 # Append the span HTML to the line HTML
                                 line_html += span_html
 
-                            
-                            # Append the line HTML to the page HTML
+                            # Close the paragraph tag and append the line HTML to the page HTML
+                            line_html += "</p>"
                             page_html += line_html
+
+
+
                     # Close the paragraph tag
-                    line_html += "</p>"
+                    
 
                 # Extract images
                 images = page.get_images(full=True)
