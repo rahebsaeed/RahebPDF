@@ -41,7 +41,7 @@ class ExtractImages:
                     f"<div style='position: relative; width: {page_width}px; height: {page_height}px; border: 1px solid black; margin-bottom: 20px;'>"
                 )
                 blocks = page.get_text("dict")["blocks"]
-                links =  page.get_links()
+                links = page.get_links()  # Extract links
                 #print(blocks)
                 for block in blocks:
                     if block['type'] == 0:  # Text block
@@ -94,7 +94,19 @@ class ExtractImages:
                                 if superscripted:
                                     style += "vertical-align: super; font-size: smaller; "
 
-                                # Create span HTML with relative positioning
+                                # Check if the span falls within a link
+                                for link in links:
+                                    x0, y0, x1, y1 = link['from']  # The bounding box of the link
+                                    span_x0, span_y0, span_x1, span_y1 = span['bbox']
+                                    # Check if the span's origin is within the link's bbox
+                                    #print('x0 is: ',x0 )
+                                    #print('origin is: ', span['origin'][0])
+                                    if (x0 <= span['origin'][0] <= x1) and (y0 <= span['origin'][1] <= y1):
+                                        link_target = link.get('uri', '#')  # Use the URI if available, otherwise #
+                                        styled_text = f"<a href='{link_target}'>{styled_text}</a>"
+                                        break  # Assume a span can only be part of one link
+
+                                # Create span HTML with relative positioning and the link inside it
                                 span_html = f"<span style='{style}'>{styled_text}</span>"
 
                                 # Append the span HTML to the line HTML
@@ -103,11 +115,6 @@ class ExtractImages:
                             # Close the paragraph tag and append the line HTML to the page HTML
                             line_html += "</p>"
                             page_html += line_html
-
-
-
-                    # Close the paragraph tag
-                    
 
                 # Extract images
                 images = page.get_images(full=True)

@@ -27,19 +27,6 @@ class ExtractTextPDFtoHTML:
             print(f"Error extracting text from PDF: {e}")
         return text
 
-    def detect_list_type(self, line_text: str):
-        """Detect if a line is part of a list and return the list type."""
-        list_markers = {
-            'circle': ('●', '○', '◯', '⦿', '◉', '⦾', '◦', '◘'),
-            'disc': ('•', '‣', '⁃', '∙', '⁍', '⁌'),
-            'square': ('■', '□', '▪', '▫'),
-            'number': [f"{i}." for i in range(1, 10)],
-            'letter': [f"{chr(i)}." for i in range(65, 91)]  # A. to Z.
-        }
-        for list_type, markers in list_markers.items():
-            if any(line_text.strip().startswith(marker) for marker in markers):
-                return list_type
-        return None
 
     def generate_css(self) -> str:
         """Generate CSS for the extracted styled text."""
@@ -93,7 +80,6 @@ class ExtractTextPDFtoHTML:
         css = self.generate_css()
         html_content += css + "</head><body>"
 
-        current_list_type = None
         
         if not self.text_with_styles:
             return html_content + "</body></html>"
