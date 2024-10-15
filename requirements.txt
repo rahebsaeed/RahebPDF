@@ -4,3 +4,4 @@ python-dotenv
 langdetect
 pdf2docx
 python-docx
+pdfplumber

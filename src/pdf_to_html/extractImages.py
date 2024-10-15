@@ -42,31 +42,21 @@ class ExtractImages:
                 )
                 blocks = page.get_text("dict")["blocks"]
                 links = page.get_links()  # Extract links
-                #print(blocks)
+
                 for block in blocks:
                     if block['type'] == 0:  # Text block
                         for line in block['lines']:
-                            # Get the bounding box for the text block
-                            block_left = block['bbox'][0]
-                            block_top = block['bbox'][1]
-
-                            # Start a new paragraph with absolute positioning based on block's bbox
-                            line_html = f"<p class='paragraph' style='position: absolute; left: {block_left}px; top: {block_top}px;'>"
-
                             for span in line['spans']:
-                                # Calculate relative positions for each span within the paragraph
-                                span_left = span['bbox'][0] - span['origin'][0] 
-                                span_top = span['origin'][1] - block_top      
+                                # Calculate relative positions for each span
+                                span_left = span['bbox'][0]
+                                span_top = span['bbox'][1]  # Relative to the top of the block
+                                
                                 # Calculate rotation angle based on the 'dir' vector from the PDF
                                 dir_value = line['dir']
                                 cosine = dir_value[0]
                                 sine = -dir_value[1]
-
-                                # Compute rotation angle in degrees
                                 angle_in_radians = math.atan2(sine, cosine)
                                 angle_in_degrees = math.degrees(angle_in_radians)
-
-                                # Generate CSS for the rotation
                                 rotation_css = f"transform: rotate({angle_in_degrees}deg);"
 
                                 # Prepare properties for HTML representation
@@ -80,7 +70,7 @@ class ExtractImages:
                                 styled_text = span['text']
 
                                 # Build the style string for the span
-                                style = f"font-size: {span['size']}px; color: {color}; background-color: {background_color}; position: relative; left: {span_left}px; top: {span_top}px; {rotation_css} "
+                                style = f"font-size: {span['size']}px; color: {color}; background-color: {background_color}; position: absolute; left: {span_left}px; top: {span_top}px; {rotation_css} "
                                 if bold:
                                     styled_text = f"<b>{styled_text}</b>"
                                 if italic:
@@ -94,27 +84,24 @@ class ExtractImages:
                                 if superscripted:
                                     style += "vertical-align: super; font-size: smaller; "
 
+                                # Initialize span HTML
+                                span_html = f"<span style='{style}'>{styled_text}</span>"
+
                                 # Check if the span falls within a link
                                 for link in links:
                                     x0, y0, x1, y1 = link['from']  # The bounding box of the link
-                                    span_x0, span_y0, span_x1, span_y1 = span['bbox']
-                                    # Check if the span's origin is within the link's bbox
-                                    #print('x0 is: ',x0 )
-                                    #print('origin is: ', span['origin'][0])
-                                    if (x0 <= span['origin'][0] <= x1) and (y0 <= span['origin'][1] <= y1):
+                                    
+                                    # Check if the span's bounding box overlaps the link's bounding box
+                                    if (x0 <= span['bbox'][0] and y0 <= span['bbox'][1] and x1 >= span['bbox'][2] and y1 >= span['bbox'][3]):
                                         link_target = link.get('uri', '#')  # Use the URI if available, otherwise #
+                                        # Insert the link directly inside the styled text
                                         styled_text = f"<a href='{link_target}'>{styled_text}</a>"
-                                        break  # Assume a span can only be part of one link
+                                        # Update span HTML to include the link inside the span
+                                        span_html = f"<span style='{style}'>{styled_text}</span>"
+                                        break  # Stop checking other links since this span is inside a link
 
-                                # Create span HTML with relative positioning and the link inside it
-                                span_html = f"<span style='{style}'>{styled_text}</span>"
-
-                                # Append the span HTML to the line HTML
-                                line_html += span_html
-
-                            # Close the paragraph tag and append the line HTML to the page HTML
-                            line_html += "</p>"
-                            page_html += line_html
+                                # Append the span HTML directly inside the div (no <p>)
+                                page_html += span_html
 
                 # Extract images
                 images = page.get_images(full=True)

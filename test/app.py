@@ -27,6 +27,6 @@ if __name__ == "__main__":
     converter = PDFConverter(r"C:\wamp64\RahebPDF\test\sample.pdf", r"C:\wamp64\RahebPDF\test\output.html")
     
     # Call the method to convert the PDF to HTML
-    converter.convert_pdf_to_html()
+    converter.convert_pdf_to_html()()
     
     print_debug_message("PDF content converted and saved to output.html")
