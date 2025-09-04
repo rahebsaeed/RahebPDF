@@ -82,7 +82,7 @@ RahebPDF/
 │   ├── fonts.json
 │   ├── img_.json
 │   ├── output.csv
-│   ├── [output.html](http://_vscodecontentref_/1)
+│   ├── output.html
 │   ├── resarch.pdf
 │   ├── sample.pdf
 │   ├── tables.json
@@ -95,16 +95,15 @@ RahebPDF/
 │       ├── image_1.jpeg
 │       └── ...
 │
-├── [setup.py](http://_vscodecontentref_/2)
-├── [requirements.txt](http://_vscodecontentref_/3)
+├── setup.py
+├── requirements.txt
 ├── .env
 ├── .pypirc
 ├── license
-├── [README.md](http://_vscodecontentref_/4)
-└── [command.txt](http://_vscodecontentref_/5)
+├── EADME.md
+└── command.txt
 ```
 
-(Adjust paths if your code lives under src/pdf_to_html or directly under pdf_to_html.)
 
 ## Usage notes
 
