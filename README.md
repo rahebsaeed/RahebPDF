@@ -61,19 +61,48 @@ Adjust imports if you installed in editable mode or are running from the repo ro
 
 A typical repository layout:
 
+```
 RahebPDF/
-- src/ or pdf_to_html/
-  - __init__.py
-  - utils.py                # high-level conversion helpers
-  - extractTextPDFtoHTML.py # main PDF → HTML logic
-  - extractImages.py        # image extraction utilities
-  - tables.py               # simple table detection/export
-  - detectLanguage.py       # language detection helpers
-- test/                     # sample PDFs and integration tests
-- requirements.txt
-- setup.py
-- README.md
-- license
+│
+├── src/
+│   └── pdf_to_html/
+│       ├── __init__.py
+│       ├── detectLanguage.py
+│       ├── extractImages.py
+│       ├── extractTextPDFtoHTML.py
+│       ├── tables.py
+│       ├── utils.py
+│       └── __pycache__/
+│
+├── test/
+│   ├── app.py
+│   ├── arabic.pdf
+│   ├── blocks.json
+│   ├── doc.html
+│   ├── fonts.json
+│   ├── img_.json
+│   ├── output.csv
+│   ├── [output.html](http://_vscodecontentref_/1)
+│   ├── resarch.pdf
+│   ├── sample.pdf
+│   ├── tables.json
+│   ├── tables.txt
+│   ├── test.ram
+│   ├── text_with_styles.json
+│   ├── Wiki_Test_Image.jpg
+│   └── images/
+│       ├── image_0.jpeg
+│       ├── image_1.jpeg
+│       └── ...
+│
+├── [setup.py](http://_vscodecontentref_/2)
+├── [requirements.txt](http://_vscodecontentref_/3)
+├── .env
+├── .pypirc
+├── license
+├── [README.md](http://_vscodecontentref_/4)
+└── [command.txt](http://_vscodecontentref_/5)
+```
 
 (Adjust paths if your code lives under src/pdf_to_html or directly under pdf_to_html.)
 
