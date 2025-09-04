@@ -1,4 +1,3 @@
-// ...existing code...
 # RahebPDF
 
 RahebPDF is a lightweight Python toolkit for extracting content from PDF files and converting PDFs to clean, semantic HTML. It supports text extraction (with style metadata), image extraction, simple table detection, and language detection. It is designed for automation, research, and content republishing workflows.
